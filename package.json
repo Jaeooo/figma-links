@@ -1,8 +1,14 @@
 {
   "name": "figma-links",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Figma frame deep-link exporter for Claude Code & Cursor — installs /figma-links slash command into your project",
-  "keywords": ["figma", "claude-code", "cursor", "deep-link", "design"],
+  "keywords": [
+    "figma",
+    "claude-code",
+    "cursor",
+    "deep-link",
+    "design"
+  ],
   "license": "MIT",
   "bin": {
     "figma-links": "./bin/cli.js"
@@ -17,5 +23,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Jaeooo/figma-links.git"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^5.5.0"
   }
 }

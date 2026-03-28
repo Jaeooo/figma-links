@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
+const { select } = require('@inquirer/prompts');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 const CWD = process.cwd();
@@ -98,23 +98,18 @@ if (flags.has('--cursor') && !flags.has('--claude')) {
 }
 
 // 대화형 프롬프트
-const choices = [
-  { label: 'Both (Claude Code + Cursor)', claude: true,  cursor: true  },
-  { label: 'Claude Code only',            claude: true,  cursor: false },
-  { label: 'Cursor only',                 claude: false, cursor: true  },
-];
-
 console.log('\nfigma-links init\n');
-console.log('? 어떤 환경에 설치할까요?\n');
-choices.forEach((c, i) => console.log(`  ${i + 1}) ${c.label}`));
-console.log('');
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-rl.question('선택 (1-3, 기본값 1): ', (answer) => {
-  rl.close();
-  const idx = parseInt(answer.trim(), 10);
-  const choice = choices[(isNaN(idx) || idx < 1 || idx > 3) ? 0 : idx - 1];
-  console.log(`\n> ${choice.label}\n`);
-  install(choice.claude, choice.cursor);
+select({
+  message: '어떤 환경에 설치할까요?',
+  choices: [
+    { name: 'Both (Claude Code + Cursor)', value: 'both'   },
+    { name: 'Claude Code only',            value: 'claude' },
+    { name: 'Cursor only',                 value: 'cursor' },
+  ],
+}).then((answer) => {
+  console.log('');
+  install(answer !== 'cursor', answer !== 'claude');
+}).catch(() => {
+  process.exit(1);
 });
