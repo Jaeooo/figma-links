@@ -48,7 +48,7 @@ function copyDir(src, dest) {
       copyDir(srcPath, destPath);
     } else {
       if (!force && fs.existsSync(destPath)) {
-        console.log(`  skip  ${path.relative(CWD, destPath)}  (already exists, use --force to overwrite)`);
+        console.log(`  skip   ${path.relative(CWD, destPath)}  (already exists — use --force to overwrite)`);
       } else {
         fs.copyFileSync(srcPath, destPath);
         console.log(`  copy  ${path.relative(CWD, destPath)}`);
@@ -98,10 +98,10 @@ if (flags.has('--cursor') && !flags.has('--claude')) {
 }
 
 // 대화형 프롬프트
-console.log('\nfigma-links init\n');
+console.log('\nfigma-links — init\n');
 
 select({
-  message: '어떤 환경에 설치할까요?',
+  message: 'Which environment would you like to set up?',
   choices: [
     { name: 'Both (Claude Code + Cursor)', value: 'both'   },
     { name: 'Claude Code only',            value: 'claude' },
