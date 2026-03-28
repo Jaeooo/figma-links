@@ -42,14 +42,23 @@ description: Runs the local Figma Explorer HTML app, opens it in the browser, an
 
 ### 2) 로컬 서버 실행
 
-프로젝트 루트 기준:
+서버를 띄우기 전에 **반드시** 포트 충돌을 해소한다. 이미 떠 있는 프로세스가 있으면 kill하고 새로 실행한다:
 
 ```bash
+# 8080 포트를 쓰는 기존 프로세스 종료 후 서버 실행
+lsof -ti :8080 | xargs kill -9 2>/dev/null; sleep 0.5
 python3 .claude/tools/serve_figma_explorer.py &
+sleep 1
+# 서버가 실제로 응답하는지 확인
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/figma-explorer.html
+```
+
+응답 코드가 `200`이면 정상. 아니면 포트를 바꿔서 재시도:
+```bash
+python3 .claude/tools/serve_figma_explorer.py 9000 &
 ```
 
 기본 주소: `http://localhost:8080/figma-explorer.html`
-(다른 포트: `python3 .claude/tools/serve_figma_explorer.py 9000`)
 
 `file://` 로 HTML을 열면 CORS로 Figma API가 막히므로 **반드시 HTTP로 연다.**
 
@@ -77,6 +86,7 @@ http://localhost:8080/figma-explorer.html?url={url-encoded-figma-url}&token={FIG
 
 - **로컬 서버**: 저장에 성공하면 페이지가 `POST /api/shutdown`을 호출해 **`serve_figma_explorer.py` 프로세스가 자동 종료**된다. 다음에 다시 쓰려면 서버를 다시 실행한다.
 - **브라우저 탭**: 앱은 `window.close()`를 시도하고, 안 되면 **Simple Browser 탭을 수동으로 닫는다**.
+- **완료 메시지**: "figma_exports/figma-links-{fileKey}.md 파일을 저장했습니다." 형식으로 간결하게 표시한다.
 
 ### 6) 프로젝트에 반영
 
@@ -96,7 +106,8 @@ http://localhost:8080/figma-explorer.html?url={url-encoded-figma-url}&token={FIG
 
 ## 에이전트 체크리스트
 
-- [ ] `python3 .claude/tools/serve_figma_explorer.py`로 서버를 띄웠는가(또는 이미 떠 있는지 확인).
+- [ ] 서버 실행 전 `lsof -ti :8080 | xargs kill -9 2>/dev/null` 로 포트를 먼저 비웠는가.
+- [ ] `curl` 로 서버가 200 응답하는지 확인했는가.
 - [ ] 브라우저가 `localhost`의 `figma-explorer.html`을 여는가(`file://` 아님).
 - [ ] `$FIGMA_TOKEN`이 설정되어 있는가. 사용자에게 토큰을 채팅에 출력하도록 요구하지 않았는가.
 - [ ] Markdown이 **`figma_exports/`** 에 저장됐는지 확인했는가.
