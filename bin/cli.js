@@ -2,11 +2,13 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
-const { select } = require('@inquirer/prompts');
+const { select, password } = require('@inquirer/prompts');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 const CWD = process.cwd();
+const CLAUDE_SETTINGS = path.join(os.homedir(), '.claude', 'settings.json');
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -51,34 +53,70 @@ function copyDir(src, dest) {
         console.log(`  skip   ${path.relative(CWD, destPath)}  (already exists — use --force to overwrite)`);
       } else {
         fs.copyFileSync(srcPath, destPath);
-        console.log(`  copy  ${path.relative(CWD, destPath)}`);
+        console.log(`  copy   ${path.relative(CWD, destPath)}`);
       }
     }
   }
 }
 
-function printDone(doClaude, doCursor) {
-  const tokenSteps = [];
-  if (doClaude) tokenSteps.push('   Claude Code → add to ~/.claude/settings.json:\n     { "env": { "FIGMA_TOKEN": "figd_..." } }');
-  if (doCursor)  tokenSteps.push('   Cursor → add to .env in your project root:\n     FIGMA_TOKEN=figd_...');
-
-  console.log(`
-Done! Next steps:
-
-1. Set your Figma PAT:
-${tokenSteps.join('\n\n')}
-
-2. Run in your IDE:
-     /figma-links https://www.figma.com/design/{fileKey}/...
-
-Output will be saved to figma_exports/figma-links-{fileKey}.md
-`);
+function getClaudeToken() {
+  try {
+    const settings = JSON.parse(fs.readFileSync(CLAUDE_SETTINGS, 'utf8'));
+    return settings?.env?.FIGMA_TOKEN || null;
+  } catch {
+    return null;
+  }
 }
 
-function install(doClaude, doCursor) {
+function saveClaudeToken(token) {
+  let settings = {};
+  try {
+    settings = JSON.parse(fs.readFileSync(CLAUDE_SETTINGS, 'utf8'));
+  } catch {
+    // file doesn't exist or invalid JSON — start fresh
+  }
+  if (!settings.env) settings.env = {};
+  settings.env.FIGMA_TOKEN = token;
+  fs.mkdirSync(path.dirname(CLAUDE_SETTINGS), { recursive: true });
+  fs.writeFileSync(CLAUDE_SETTINGS, JSON.stringify(settings, null, 2) + '\n', 'utf8');
+  console.log(`  saved  FIGMA_TOKEN → ${CLAUDE_SETTINGS}`);
+}
+
+async function setupClaudeToken() {
+  const existing = getClaudeToken();
+  if (existing) {
+    console.log(`  ✓  FIGMA_TOKEN already set in ${CLAUDE_SETTINGS}`);
+    return;
+  }
+
+  console.log(`\n  FIGMA_TOKEN not found in ${CLAUDE_SETTINGS}`);
+  console.log('  Get your token at: https://www.figma.com/settings (Personal access tokens → file_content:read)\n');
+
+  const token = await password({
+    message: 'Enter your Figma Personal Access Token (input hidden):',
+    validate: (v) => v.trim().startsWith('figd_') ? true : 'Token should start with "figd_"',
+  });
+
+  saveClaudeToken(token.trim());
+}
+
+function printDone(doClaude, doCursor) {
+  const steps = [];
+  if (doCursor) steps.push('  Cursor → add to .env in your project root:\n    FIGMA_TOKEN=figd_...');
+
+  let msg = '\nDone!';
+  if (steps.length) {
+    msg += `\n\nRemaining setup:\n\n${steps.join('\n\n')}`;
+  }
+  msg += '\n\nRun in your IDE:\n  /figma-links https://www.figma.com/design/{fileKey}/...\n\nOutput → figma_exports/figma-links-{fileKey}.md\n';
+  console.log(msg);
+}
+
+async function install(doClaude, doCursor) {
   if (doClaude) {
     console.log('\nClaude Code:');
     copyDir(path.join(TEMPLATES_DIR, 'claude'), path.join(CWD, '.claude'));
+    await setupClaudeToken();
   }
   if (doCursor) {
     console.log('\nCursor:');
@@ -87,17 +125,17 @@ function install(doClaude, doCursor) {
   printDone(doClaude, doCursor);
 }
 
-// 플래그로 바로 지정된 경우 프롬프트 없이 실행
+// Flag shortcuts — skip prompt
 if (flags.has('--claude') && !flags.has('--cursor')) {
-  install(true, false);
-  process.exit(0);
+  install(true, false).catch(() => process.exit(1));
+  return;
 }
 if (flags.has('--cursor') && !flags.has('--claude')) {
-  install(false, true);
-  process.exit(0);
+  install(false, true).catch(() => process.exit(1));
+  return;
 }
 
-// 대화형 프롬프트
+// Interactive prompt
 console.log('\nfigma-links — init\n');
 
 select({
@@ -109,7 +147,7 @@ select({
   ],
 }).then((answer) => {
   console.log('');
-  install(answer !== 'cursor', answer !== 'claude');
+  return install(answer !== 'cursor', answer !== 'claude');
 }).catch(() => {
   process.exit(1);
 });
