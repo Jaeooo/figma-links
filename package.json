@@ -1,6 +1,6 @@
 {
   "name": "figma-links",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Figma frame deep-link exporter for Claude Code & Cursor — installs /figma-links slash command into your project",
   "keywords": [
     "figma",

@@ -9,6 +9,7 @@ const { select, password } = require('@inquirer/prompts');
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 const CWD = process.cwd();
 const CLAUDE_SETTINGS = path.join(os.homedir(), '.claude', 'settings.json');
+const CURSOR_ENV = path.join(CWD, '.env');
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -38,6 +39,13 @@ if (command !== 'init') {
   process.exit(1);
 }
 
+// Validate templates directory exists before doing anything
+if (!fs.existsSync(TEMPLATES_DIR)) {
+  console.error(`\n  Error: templates directory not found at ${TEMPLATES_DIR}`);
+  console.error('  The package may be corrupted. Try: npx figma-links@latest init\n');
+  process.exit(1);
+}
+
 const force = flags.has('--force');
 
 function copyDir(src, dest) {
@@ -58,6 +66,8 @@ function copyDir(src, dest) {
     }
   }
 }
+
+// --- Claude Code token ---
 
 function getClaudeToken() {
   try {
@@ -90,7 +100,8 @@ async function setupClaudeToken() {
   }
 
   console.log(`\n  FIGMA_TOKEN not found in ${CLAUDE_SETTINGS}`);
-  console.log('  Get your token at: https://www.figma.com/settings (Personal access tokens → file_content:read)\n');
+  console.log('  Get your token at: https://www.figma.com/settings');
+  console.log('  (Personal access tokens → scope: file_content:read)\n');
 
   const token = await password({
     message: 'Enter your Figma Personal Access Token (input hidden):',
@@ -100,16 +111,69 @@ async function setupClaudeToken() {
   saveClaudeToken(token.trim());
 }
 
-function printDone(doClaude, doCursor) {
-  const steps = [];
-  if (doCursor) steps.push('  Cursor → add to .env in your project root:\n    FIGMA_TOKEN=figd_...');
+// --- Cursor token ---
 
-  let msg = '\nDone!';
-  if (steps.length) {
-    msg += `\n\nRemaining setup:\n\n${steps.join('\n\n')}`;
+function getCursorToken() {
+  if (!fs.existsSync(CURSOR_ENV)) return null;
+  const content = fs.readFileSync(CURSOR_ENV, 'utf8');
+  const match = content.match(/^FIGMA_TOKEN=(.+)$/m);
+  return match ? match[1].trim() : null;
+}
+
+function saveCursorToken(token) {
+  let content = '';
+  if (fs.existsSync(CURSOR_ENV)) {
+    content = fs.readFileSync(CURSOR_ENV, 'utf8');
+    // replace existing entry
+    if (/^FIGMA_TOKEN=/m.test(content)) {
+      content = content.replace(/^FIGMA_TOKEN=.*/m, `FIGMA_TOKEN=${token}`);
+      fs.writeFileSync(CURSOR_ENV, content, 'utf8');
+      console.log(`  saved  FIGMA_TOKEN → ${path.relative(CWD, CURSOR_ENV)}`);
+      return;
+    }
   }
-  msg += '\n\nRun in your IDE:\n  /figma-links https://www.figma.com/design/{fileKey}/...\n\nOutput → figma_exports/figma-links-{fileKey}.md\n';
-  console.log(msg);
+  // append
+  const sep = content && !content.endsWith('\n') ? '\n' : '';
+  fs.writeFileSync(CURSOR_ENV, content + sep + `FIGMA_TOKEN=${token}\n`, 'utf8');
+  console.log(`  saved  FIGMA_TOKEN → ${path.relative(CWD, CURSOR_ENV)}`);
+}
+
+async function setupCursorToken() {
+  const existing = getCursorToken();
+  if (existing) {
+    console.log(`  ✓  FIGMA_TOKEN already set in ${path.relative(CWD, CURSOR_ENV)}`);
+    return;
+  }
+
+  console.log(`\n  FIGMA_TOKEN not found in ${path.relative(CWD, CURSOR_ENV)}`);
+  console.log('  Get your token at: https://www.figma.com/settings');
+  console.log('  (Personal access tokens → scope: file_content:read)\n');
+
+  const token = await password({
+    message: 'Enter your Figma Personal Access Token (input hidden):',
+    validate: (v) => v.trim().startsWith('figd_') ? true : 'Token should start with "figd_"',
+  });
+
+  saveCursorToken(token.trim());
+  warnGitignore();
+}
+
+function warnGitignore() {
+  const gitignorePath = path.join(CWD, '.gitignore');
+  let ignored = false;
+  if (fs.existsSync(gitignorePath)) {
+    const content = fs.readFileSync(gitignorePath, 'utf8');
+    ignored = /^\.env$/m.test(content) || /^\.env\b/.test(content);
+  }
+  if (!ignored) {
+    console.log('  ⚠  Remember to add .env to your .gitignore to keep your token out of version control.');
+  }
+}
+
+function printDone() {
+  console.log('\nAll done! Run in your IDE:');
+  console.log('  /figma-links https://www.figma.com/design/{fileKey}/...\n');
+  console.log('Output → figma_exports/figma-links-{fileKey}.md\n');
 }
 
 async function install(doClaude, doCursor) {
@@ -121,8 +185,9 @@ async function install(doClaude, doCursor) {
   if (doCursor) {
     console.log('\nCursor:');
     copyDir(path.join(TEMPLATES_DIR, 'cursor'), path.join(CWD, '.cursor'));
+    await setupCursorToken();
   }
-  printDone(doClaude, doCursor);
+  printDone();
 }
 
 // Flag shortcuts — skip prompt

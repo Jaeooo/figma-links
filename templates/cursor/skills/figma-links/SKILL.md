@@ -42,16 +42,32 @@ Activate this skill when the user runs **`/figma-links {URL}`** or asks for Figm
 
 ### 2) Start the local server
 
-Always clear port 8080 before starting to avoid conflicts:
+Always clear port 8080 before starting to avoid conflicts.
 
+**macOS / Linux:**
 ```bash
 lsof -ti :8080 | xargs kill -9 2>/dev/null; sleep 0.5
 python3 .cursor/tools/serve_figma_explorer.py &
-sleep 1
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/figma-explorer.html
 ```
 
-A `200` response means the server is ready. If it fails, retry on a different port:
+**Windows:**
+```powershell
+$p = netstat -ano | findstr ":8080" | ForEach-Object { ($_ -split '\s+')[-1] } | Select-Object -First 1
+if ($p) { taskkill /PID $p /F }
+Start-Process python3 -ArgumentList ".cursor/tools/serve_figma_explorer.py" -NoNewWindow
+```
+
+After starting, **verify the server is ready** with up to 3 retries:
+```bash
+for i in 1 2 3; do
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/figma-explorer.html)
+  if [ "$CODE" = "200" ]; then echo "Server ready"; break; fi
+  echo "Attempt $i failed (HTTP $CODE), retrying..."; sleep 1
+done
+if [ "$CODE" != "200" ]; then echo "Server failed to start — try port 9000"; fi
+```
+
+If port 8080 is unavailable, use a different port and update the URL in step 3:
 ```bash
 python3 .cursor/tools/serve_figma_explorer.py 9000 &
 ```
@@ -75,7 +91,7 @@ Use the `open` command to launch in the default browser.
 1. The app auto-loads when `url` and `token` are present in the query string.
 2. Click a **page tab** in the header.
 3. Check/uncheck frames in the grid (all selected by default; thumbnail click also toggles).
-4. Click **"선택 확인 · Markdown 저장"** → saves to **`figma_exports/figma-links-{fileKey}.md`** via `POST /api/save-markdown`.
+4. Click **"Save as Markdown"** → saves to **`figma_exports/figma-links-{fileKey}.md`** via `POST /api/save-markdown`.
 
 ### 5) After saving
 
