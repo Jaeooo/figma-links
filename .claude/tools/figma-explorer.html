@@ -70,21 +70,21 @@
     <span class="header-sub" id="headerSub"></span>
   </div>
   <div class="page-tabs" id="pageTabs">
-    <div class="page-tabs-placeholder">파일을 불러오는 중...</div>
+    <div class="page-tabs-placeholder">Loading...</div>
   </div>
 </div>
 
 <div class="main" id="main">
   <div class="empty-state">
     <div class="icon">📐</div>
-    <p>Figma 파일을 불러오는 중입니다</p>
+    <p>Loading Figma file...</p>
   </div>
 </div>
 
 <div class="save-bar" id="saveBar" style="display:none">
   <span class="save-bar-info" id="saveBarInfo"></span>
-  <button class="select-all-btn" onclick="toggleSelectAll()">전체 선택/해제</button>
-  <button class="save-btn" id="saveBtn" onclick="exportSelectedFramesMarkdown()">선택 확인 · Markdown 저장</button>
+  <button class="select-all-btn" onclick="toggleSelectAll()">Select / Deselect All</button>
+  <button class="save-btn" id="saveBtn" onclick="exportSelectedFramesMarkdown()">Save as Markdown</button>
 </div>
 
 <script>
@@ -116,27 +116,27 @@ async function loadFile() {
 
   currentFileKey = extractFileKey(url);
 
-  document.getElementById('pageTabs').innerHTML = '<div class="page-tabs-placeholder">페이지 목록 로딩중...</div>';
-  document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>불러오는 중...</div>';
+  document.getElementById('pageTabs').innerHTML = '<div class="page-tabs-placeholder">Loading pages...</div>';
+  document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading...</div>';
 
   try {
     fileData = await apiFetch(`/files/${currentFileKey}?depth=1`);
     const pages = fileData.document.children;
 
     document.getElementById('headerTitle').textContent = fileData.name;
-    document.getElementById('headerSub').textContent = `${pages.length}개 페이지`;
+    document.getElementById('headerSub').textContent = `${pages.length} page${pages.length !== 1 ? 's' : ''}`;
 
     renderPageTabs(pages);
 
-    // 각 페이지 노드 순차 로드
+    // load each page node sequentially
     for (const page of pages) {
       try {
         const nodeData = await apiFetch(`/files/${currentFileKey}/nodes?ids=${page.id}&depth=3`);
         pagesData[page.id] = nodeData.nodes[page.id]?.document;
-        // 현재 보고 있는 페이지면 갱신
+        // refresh grid if this page is currently visible
         if (page.id === currentPageId) renderFrameGrid(pagesData[page.id]);
       } catch (e) {
-        console.warn(`Page ${page.name} 로드 실패:`, e);
+        console.warn(`Failed to load page ${page.name}:`, e);
       }
     }
   } catch (e) {
@@ -152,7 +152,7 @@ function renderPageTabs(pages) {
   }
   document.getElementById('pageTabs').innerHTML = html;
 
-  // 첫 페이지 자동 선택
+  // auto-select first page
   if (pages.length > 0) selectPage(pages[0].id);
 }
 
@@ -164,7 +164,7 @@ function selectPage(pageId) {
 
   const data = pagesData[pageId];
   if (!data) {
-    document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>이 페이지 로딩중...</div>';
+    document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading page...</div>';
     document.getElementById('saveBar').style.display = 'none';
     return;
   }
@@ -176,20 +176,20 @@ async function renderFrameGrid(pageNode) {
   const frames = (pageNode.children || []).filter(c => c.type === 'FRAME');
 
   if (frames.length === 0) {
-    main.innerHTML = '<div class="empty-state"><div class="icon">🖼</div><p>이 페이지에 최상위 FRAME이 없습니다.</p></div>';
+    main.innerHTML = '<div class="empty-state"><div class="icon">🖼</div><p>No top-level frames found on this page.</p></div>';
     document.getElementById('saveBar').style.display = 'none';
     return;
   }
 
-  // 썸네일 로딩 표시 먼저
-  main.innerHTML = '<div class="loading"><div class="spinner"></div><br>이미지 로딩중...</div>';
+  // show loading state first
+  main.innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading thumbnails...</div>';
   document.getElementById('saveBar').style.display = 'none';
 
   let idToUrl = {};
   try {
     idToUrl = await fetchImageUrlMap(frames.map(f => f.id));
   } catch (e) {
-    console.warn('이미지 URL 로드 실패:', e);
+    console.warn('Failed to load image URLs:', e);
   }
 
   let html = '<div class="frame-grid">';
@@ -200,9 +200,9 @@ async function renderFrameGrid(pageNode) {
     html += `<div class="frame-card" id="card-${nodeIdAttr.replace(/:/g,'-')}">`;
     html += `<div class="frame-thumb" onclick="toggleCard('${nodeIdAttr}')">`;
     if (url) {
-      html += `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=thumb-fail>이미지 로드 실패</div>'" />`;
+      html += `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=thumb-fail>Failed to load</div>'" />`;
     } else {
-      html += `<div class="thumb-fail">미리보기 없음</div>`;
+      html += `<div class="thumb-fail">No preview</div>`;
     }
     html += `</div>`;
     html += `<div class="frame-footer">`;
@@ -238,7 +238,7 @@ function onCheckChange() {
 function updateSaveBarInfo() {
   const all = document.querySelectorAll('.top-frame-cb');
   const checked = document.querySelectorAll('.top-frame-cb:checked');
-  document.getElementById('saveBarInfo').textContent = `${checked.length} / ${all.length}개 프레임 선택됨`;
+  document.getElementById('saveBarInfo').textContent = `${checked.length} / ${all.length} frame${all.length !== 1 ? 's' : ''} selected`;
 }
 
 function toggleSelectAll() {
@@ -273,12 +273,12 @@ function escapeMdLine(s) {
 async function exportSelectedFramesMarkdown() {
   const boxes = document.querySelectorAll('#main .top-frame-cb:checked');
   if (!boxes.length) {
-    alert('선택된 프레임이 없습니다.');
+    alert('No frames selected. Please check at least one frame.');
     return;
   }
   const title = fileData && fileData.name ? fileData.name : currentFileKey;
   let md = `# Figma — Link to selection\n\n`;
-  md += `파일: **${escapeMdLine(title)}**\n\n`;
+  md += `File: **${escapeMdLine(title)}**\n\n`;
   for (const cb of boxes) {
     const id = cb.getAttribute('data-node-id');
     const name = escapeMdLine(cb.getAttribute('data-frame-name') || id);
@@ -289,7 +289,7 @@ async function exportSelectedFramesMarkdown() {
   const filename = `figma-links-${currentFileKey}.md`.replace(/[^\w.\-]/g, '_');
   const btn = document.getElementById('saveBtn');
   btn.disabled = true;
-  btn.textContent = '저장중...';
+  btn.textContent = 'Saving...';
 
   try {
     const r = await fetch('/api/save-markdown', {
@@ -302,11 +302,11 @@ async function exportSelectedFramesMarkdown() {
       try {
         await fetch('/api/shutdown', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', keepalive: true });
       } catch (_) {}
-      alert(`저장했습니다: ${j.path}`);
+      alert(`Saved: ${j.path}`);
       window.close();
       return;
     }
-    throw new Error((j && j.error) ? j.error : (r.statusText || '저장 실패'));
+    throw new Error((j && j.error) ? j.error : (r.statusText || 'Save failed'));
   } catch (e) {
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
     const a = document.createElement('a');
@@ -314,10 +314,10 @@ async function exportSelectedFramesMarkdown() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
-    alert('서버 저장 실패 — 브라우저 다운로드로 대체했습니다.\n' + (e && e.message ? e.message : ''));
+    alert('Server save failed — downloaded via browser instead.\n' + (e && e.message ? e.message : ''));
   } finally {
     btn.disabled = false;
-    btn.textContent = '선택 확인 · Markdown 저장';
+    btn.textContent = 'Save as Markdown';
   }
 }
 
@@ -331,7 +331,7 @@ function escAttr(s) {
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
 }
 
-// 초기화: figma-config.json + URL 쿼리로 값 채운 뒤 즉시 불러오기
+// init: populate from figma-config.json + query params, then auto-load
 (async function init() {
   try {
     const r = await fetch('figma-config.json', { cache: 'no-store' });
@@ -350,7 +350,7 @@ function escAttr(s) {
   } else {
     document.getElementById('pageTabs').innerHTML = '';
     document.getElementById('main').innerHTML =
-      '<div class="error" style="margin:20px">figma-config.json에 <code>token</code>·<code>fileUrl</code>을 넣거나, 주소에 <code>?url=</code>·<code>?token=</code> 쿼리를 넣은 뒤 새로고침하세요.</div>';
+      '<div class="error" style="margin:20px">Add <code>token</code> and <code>fileUrl</code> to figma-config.json, or pass <code>?url=</code> and <code>?token=</code> as query parameters and reload.</div>';
   }
 })();
 </script>

@@ -6,96 +6,54 @@
 <title>Figma Explorer</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1e1e1e; color: #e0e0e0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1e1e1e; color: #e0e0e0; display: flex; flex-direction: column; height: 100vh; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-  .container { display: flex; height: 100vh; }
+  /* Header */
+  .header { background: #252525; border-bottom: 1px solid #3a3a3a; padding: 0 20px; flex-shrink: 0; }
+  .header-top { display: flex; align-items: center; gap: 12px; padding: 12px 0 10px; }
+  .header-title { font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; }
+  .header-sub { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .page-tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 0; scrollbar-width: none; }
+  .page-tabs::-webkit-scrollbar { display: none; }
+  .page-tab { padding: 8px 16px; font-size: 13px; cursor: pointer; border-radius: 6px 6px 0 0; color: #aaa; white-space: nowrap; border: 1px solid transparent; border-bottom: none; transition: background 0.15s; }
+  .page-tab:hover { background: #2e2e2e; color: #ddd; }
+  .page-tab.active { background: #1e1e1e; color: #fff; border-color: #3a3a3a; font-weight: 600; }
+  .page-tabs-placeholder { padding: 8px 0; font-size: 12px; color: #666; }
 
-  .sidebar { width: 320px; min-width: 320px; background: #252525; border-right: 1px solid #444; overflow-y: auto; }
-  .main { flex: 1; overflow-y: auto; padding: 20px; }
+  /* Main */
+  .main { flex: 1; overflow-y: auto; padding: 24px; }
 
-  .page-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 8px; }
-  .page-item:hover { background: #333; }
-  .page-item.active { background: #0d99ff22; border-left: 3px solid #0d99ff; }
-  .page-icon { font-size: 14px; }
-  .page-name { font-size: 13px; font-weight: 500; }
-  .page-count { font-size: 11px; color: #888; margin-left: auto; }
-
-  .section-title { font-size: 11px; text-transform: uppercase; color: #888; padding: 12px 16px 6px; letter-spacing: 1px; font-weight: 600; }
-
-  .node-tree { padding: 0 8px 20px; }
-  .tree-node { padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
-  .tree-node:hover { background: #333; }
-  .tree-node.selected { background: #0d99ff33; }
-  .tree-toggle { width: 16px; text-align: center; color: #888; font-size: 10px; flex-shrink: 0; cursor: pointer; }
-  .tree-toggle:empty { width: 16px; }
-  .tree-type { font-size: 10px; padding: 1px 4px; border-radius: 3px; font-weight: 500; flex-shrink: 0; }
-  .tree-type.FRAME { background: #6c5ce744; color: #a78bfa; }
-  .tree-type.GROUP { background: #f59e0b44; color: #fbbf24; }
-  .tree-type.TEXT { background: #10b98144; color: #34d399; }
-  .tree-type.COMPONENT { background: #ec489944; color: #f472b6; }
-  .tree-type.COMPONENT_SET { background: #ec489944; color: #f472b6; }
-  .tree-type.INSTANCE { background: #8b5cf644; color: #c084fc; }
-  .tree-type.RECTANGLE, .tree-type.ELLIPSE, .tree-type.VECTOR, .tree-type.LINE, .tree-type.BOOLEAN_OPERATION { background: #3b82f644; color: #60a5fa; }
-  .tree-type.SECTION { background: #f97316aa; color: #fff; }
-  .tree-name { overflow: hidden; text-overflow: ellipsis; }
-  .tree-children { padding-left: 20px; }
-
-  .detail-panel { background: #2a2a2a; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-  .detail-panel h2 { font-size: 16px; margin-bottom: 12px; color: #fff; }
-  .detail-panel h3 { font-size: 13px; margin: 12px 0 6px; color: #0d99ff; }
-  .detail-row { display: flex; gap: 8px; padding: 4px 0; font-size: 12px; }
-  .detail-label { color: #888; min-width: 100px; }
-  .detail-value { color: #e0e0e0; word-break: break-all; }
-
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .stat-card { background: #2a2a2a; border-radius: 8px; padding: 16px; text-align: center; }
-  .stat-number { font-size: 28px; font-weight: 700; color: #0d99ff; }
-  .stat-label { font-size: 11px; color: #888; margin-top: 4px; }
-
-  .loading { text-align: center; padding: 40px; color: #888; }
-  .loading .spinner { display: inline-block; width: 24px; height: 24px; border: 2px solid #555; border-top-color: #0d99ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 8px; }
+  .loading { text-align: center; padding: 60px; color: #888; }
+  .loading .spinner { display: inline-block; width: 28px; height: 28px; border: 2px solid #555; border-top-color: #0d99ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .error { background: #ef444433; border: 1px solid #ef4444; border-radius: 8px; padding: 12px 16px; color: #fca5a5; font-size: 13px; margin: 20px; }
+  .error { background: #ef444433; border: 1px solid #ef4444; border-radius: 8px; padding: 12px 16px; color: #fca5a5; font-size: 13px; }
 
-  .search-box { padding: 8px 12px; background: #1e1e1e; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 10; }
-  .search-box input { width: 100%; background: #333; border: 1px solid #444; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 12px; }
-
-  .text-content { background: #1a1a1a; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin: 4px 0; color: #34d399; font-family: monospace; max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
-
-  .screenshot-container { margin-top: 12px; }
-  .screenshot-container img { max-width: 100%; border-radius: 8px; border: 1px solid #444; }
-
-  .export-btn { background: #333; color: #ccc; border: 1px solid #555; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: auto; }
-  .export-btn:hover { background: #444; }
-
-  .empty-state { text-align: center; padding: 60px 20px; color: #666; }
+  .empty-state { text-align: center; padding: 80px 20px; color: #555; }
   .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
   .empty-state p { font-size: 14px; }
 
-  .frame-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
-  @media (max-width: 1100px) {
-    .frame-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 700px) {
-    .frame-list { grid-template-columns: 1fr; }
-  }
-  .frame-list-item { display: flex; flex-direction: column; gap: 10px; background: #1f1f1f; border-radius: 8px; padding: 14px; border: 1px solid #3a3a3a; min-width: 0; }
-  .frame-list-toolbar { display: flex; align-items: flex-start; gap: 10px; }
-  .frame-list-check-label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; flex: 1; min-width: 0; user-select: none; }
-  .frame-list-check-label input[type="checkbox"] { margin-top: 4px; flex-shrink: 0; width: 16px; height: 16px; accent-color: #0d99ff; cursor: pointer; }
-  .frame-list-check-label .frame-list-name { margin-bottom: 0; }
-  .frame-list-thumb { width: 100%; min-height: 80px; background: #111; border-radius: 6px; border: 1px solid #444; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-  .frame-list-thumb img { display: block; max-width: 100%; max-height: 200px; width: auto; height: auto; object-fit: contain; }
-  .frame-list-thumb .thumb-fail { font-size: 11px; color: #888; padding: 12px; text-align: center; }
-  .frame-list-meta { flex: 1; min-width: 0; padding-top: 0; }
-  .frame-list-name { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 6px; word-break: break-word; }
-  .frame-list-id { font-size: 11px; color: #888; font-family: ui-monospace, monospace; word-break: break-all; }
+  /* Frame grid */
+  .frame-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .frame-card { background: #252525; border: 1px solid #3a3a3a; border-radius: 10px; overflow: hidden; transition: border-color 0.15s; }
+  .frame-card:hover { border-color: #555; }
+  .frame-card.unchecked { opacity: 0.45; }
+  .frame-thumb { width: 100%; aspect-ratio: 4/3; background: #111; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+  .frame-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .thumb-fail { font-size: 11px; color: #666; text-align: center; padding: 12px; }
+  .frame-footer { padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+  .frame-footer input[type="checkbox"] { width: 15px; height: 15px; accent-color: #0d99ff; cursor: pointer; flex-shrink: 0; }
+  .frame-name { font-size: 13px; font-weight: 500; color: #e0e0e0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; user-select: none; }
 
-  .frame-export-bar { grid-column: 1 / -1; margin-top: 8px; padding-top: 16px; border-top: 1px solid #3a3a3a; }
-  .frame-md-btn { background: #15803d; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
-  .frame-md-btn:hover { background: #166534; }
+  /* Save bar */
+  .save-bar { position: sticky; bottom: 0; background: #1e1e1e; border-top: 1px solid #3a3a3a; padding: 14px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .save-bar-info { font-size: 12px; color: #888; flex: 1; }
+  .select-all-btn { background: #333; color: #ccc; border: 1px solid #555; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .select-all-btn:hover { background: #3a3a3a; }
+  .save-btn { background: #15803d; color: #fff; border: none; padding: 9px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .save-btn:hover { background: #166534; }
+  .save-btn:disabled { background: #555; cursor: default; }
 </style>
 </head>
 <body>
@@ -104,22 +62,29 @@
   <input type="hidden" id="tokenInput" autocomplete="off" />
   <input type="hidden" id="urlInput" autocomplete="off" />
   <button type="button" id="loadBtn" onclick="loadFile()" tabindex="-1"></button>
-  <button type="button" class="export-btn" onclick="exportJSON()" style="display:none" id="exportBtn" tabindex="-1">JSON</button>
 </div>
 
-<div class="container">
-  <div class="sidebar" id="sidebar">
-    <div class="empty-state">
-      <div class="icon">📐</div>
-      <p>Figma 파일을 불러와주세요</p>
-    </div>
+<div class="header">
+  <div class="header-top">
+    <span class="header-title" id="headerTitle">Figma Explorer</span>
+    <span class="header-sub" id="headerSub"></span>
   </div>
-  <div class="main" id="main">
-    <div class="empty-state">
-      <div class="icon">🔍</div>
-      <p>왼쪽에서 페이지나 노드를 선택하면<br>상세 정보가 표시됩니다</p>
-    </div>
+  <div class="page-tabs" id="pageTabs">
+    <div class="page-tabs-placeholder">Loading...</div>
   </div>
+</div>
+
+<div class="main" id="main">
+  <div class="empty-state">
+    <div class="icon">📐</div>
+    <p>Loading Figma file...</p>
+  </div>
+</div>
+
+<div class="save-bar" id="saveBar" style="display:none">
+  <span class="save-bar-info" id="saveBarInfo"></span>
+  <button class="select-all-btn" onclick="toggleSelectAll()">Select / Deselect All</button>
+  <button class="save-btn" id="saveBtn" onclick="exportSelectedFramesMarkdown()">Save as Markdown</button>
 </div>
 
 <script>
@@ -127,6 +92,7 @@ const API_BASE = 'https://api.figma.com/v1';
 let fileData = null;
 let pagesData = {};
 let currentFileKey = '';
+let currentPageId = '';
 
 function getToken() { return document.getElementById('tokenInput').value.trim(); }
 
@@ -146,147 +112,140 @@ async function apiFetch(path) {
 async function loadFile() {
   const token = getToken();
   const url = document.getElementById('urlInput').value.trim();
-  if (!token || !url) return alert('토큰과 URL을 입력해주세요');
+  if (!token || !url) return;
 
   currentFileKey = extractFileKey(url);
-  const btn = document.getElementById('loadBtn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '로딩중...';
-  }
 
-  const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = '<div class="loading"><div class="spinner"></div><br>페이지 목록 로딩중...</div>';
+  document.getElementById('pageTabs').innerHTML = '<div class="page-tabs-placeholder">Loading pages...</div>';
+  document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading...</div>';
 
   try {
-    // depth=1 로 페이지 목록만
     fileData = await apiFetch(`/files/${currentFileKey}?depth=1`);
     const pages = fileData.document.children;
 
-    renderSidebar(pages);
-    renderFileOverview(pages);
-    document.getElementById('exportBtn').style.display = '';
+    document.getElementById('headerTitle').textContent = fileData.name;
+    document.getElementById('headerSub').textContent = `${pages.length} page${pages.length !== 1 ? 's' : ''}`;
 
-    // 각 페이지별 노드를 순차 로드
+    renderPageTabs(pages);
+
+    // load each page node sequentially
     for (const page of pages) {
       try {
         const nodeData = await apiFetch(`/files/${currentFileKey}/nodes?ids=${page.id}&depth=3`);
         pagesData[page.id] = nodeData.nodes[page.id]?.document;
-        updatePageInSidebar(page.id);
+        // refresh grid if this page is currently visible
+        if (page.id === currentPageId) renderFrameGrid(pagesData[page.id]);
       } catch (e) {
-        console.warn(`Page ${page.name} 로드 실패:`, e);
+        console.warn(`Failed to load page ${page.name}:`, e);
       }
     }
   } catch (e) {
-    sidebar.innerHTML = `<div class="error">❌ ${e.message}</div>`;
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '불러오기';
-    }
+    document.getElementById('pageTabs').innerHTML = '';
+    document.getElementById('main').innerHTML = `<div class="error">❌ ${esc(e.message)}</div>`;
   }
 }
 
-function renderSidebar(pages) {
-  const sidebar = document.getElementById('sidebar');
-  let html = `<div class="section-title">📄 파일: ${fileData.name}</div>`;
-  html += `<div class="search-box"><input type="text" placeholder="노드 검색..." oninput="filterNodes(this.value)" /></div>`;
-
+function renderPageTabs(pages) {
+  let html = '';
   for (const page of pages) {
-    html += `<div class="page-item" id="page-${page.id.replace(':','-')}" onclick="selectPage('${page.id}')">
-      <span class="page-icon">📑</span>
-      <span class="page-name">${esc(page.name)}</span>
-      <span class="page-count" id="count-${page.id.replace(':','-')}">로딩중...</span>
-    </div>`;
+    html += `<div class="page-tab" id="tab-${page.id.replace(':','-')}" onclick="selectPage('${page.id}')">${esc(page.name)}</div>`;
   }
-  sidebar.innerHTML = html;
-}
+  document.getElementById('pageTabs').innerHTML = html;
 
-function updatePageInSidebar(pageId) {
-  const data = pagesData[pageId];
-  if (!data) return;
-  const countEl = document.getElementById(`count-${pageId.replace(':','-')}`);
-  if (countEl) {
-    const count = countNodes(data);
-    countEl.textContent = `${count}개 노드`;
-  }
-}
-
-function countNodes(node) {
-  if (!node) return 0;
-  let c = 1;
-  if (node.children) for (const ch of node.children) c += countNodes(ch);
-  return c;
+  // auto-select first page
+  if (pages.length > 0) selectPage(pages[0].id);
 }
 
 function selectPage(pageId) {
-  document.querySelectorAll('.page-item').forEach(el => el.classList.remove('active'));
-  const el = document.getElementById(`page-${pageId.replace(':','-')}`);
-  if (el) el.classList.add('active');
+  currentPageId = pageId;
+  document.querySelectorAll('.page-tab').forEach(el => el.classList.remove('active'));
+  const tab = document.getElementById(`tab-${pageId.replace(':','-')}`);
+  if (tab) tab.classList.add('active');
 
   const data = pagesData[pageId];
   if (!data) {
-    document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>이 페이지를 아직 로딩중...</div>';
+    document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading page...</div>';
+    document.getElementById('saveBar').style.display = 'none';
     return;
   }
-  renderPageDetail(data);
+  renderFrameGrid(data);
 }
 
-function renderPageDetail(pageNode) {
+async function renderFrameGrid(pageNode) {
   const main = document.getElementById('main');
-  const stats = getNodeStats(pageNode);
+  const frames = (pageNode.children || []).filter(c => c.type === 'FRAME');
 
-  let html = `<div class="detail-panel"><h2>📑 ${esc(pageNode.name)}</h2>
-    <div class="detail-row"><span class="detail-label">ID</span><span class="detail-value">${pageNode.id}</span></div>
-    <div class="detail-row"><span class="detail-label">타입</span><span class="detail-value">${pageNode.type}</span></div>
-  </div>`;
-
-  // 통계
-  html += `<div class="stats-grid">`;
-  const statItems = [
-    ['FRAME', '프레임'], ['SECTION', '섹션'], ['COMPONENT', '컴포넌트'],
-    ['INSTANCE', '인스턴스'], ['TEXT', '텍스트'], ['GROUP', '그룹'],
-    ['RECTANGLE', '사각형'], ['VECTOR', '벡터']
-  ];
-  for (const [type, label] of statItems) {
-    if (stats[type]) {
-      html += `<div class="stat-card"><div class="stat-number">${stats[type]}</div><div class="stat-label">${label}</div></div>`;
-    }
+  if (frames.length === 0) {
+    main.innerHTML = '<div class="empty-state"><div class="icon">🖼</div><p>No top-level frames found on this page.</p></div>';
+    document.getElementById('saveBar').style.display = 'none';
+    return;
   }
-  html += `</div>`;
 
-  // 최상위 프레임 썸네일 (비동기 로드)
-  html += `<div class="detail-panel" id="topFramesPanel"><h2>🖼 최상위 프레임</h2><div class="loading" id="topFramesLoading"><div class="spinner"></div><br>이미지 URL 요청 중...</div><div class="frame-list" id="topFramesList" style="display:none"></div></div>`;
+  // show loading state first
+  main.innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading thumbnails...</div>';
+  document.getElementById('saveBar').style.display = 'none';
 
-  /*
-  // 노드 트리
-  html += `<div class="detail-panel"><h2>🌳 노드 트리</h2><div class="node-tree" id="nodeTree">`;
-  if (pageNode.children) {
-    for (const child of pageNode.children) {
-      html += renderTreeNode(child, 0);
-    }
+  let idToUrl = {};
+  try {
+    idToUrl = await fetchImageUrlMap(frames.map(f => f.id));
+  } catch (e) {
+    console.warn('Failed to load image URLs:', e);
   }
-  html += `</div></div>`;
 
-  // 텍스트 노드 목록
-  const texts = collectTexts(pageNode);
-  if (texts.length > 0) {
-    html += `<div class="detail-panel"><h2>📝 텍스트 노드 (${texts.length}개)</h2>`;
-    for (const t of texts.slice(0, 100)) {
-      html += `<div class="text-content">[${t.id}] ${esc(t.characters)}</div>`;
+  let html = '<div class="frame-grid">';
+  for (const f of frames) {
+    const url = idToUrl[f.id];
+    const nodeIdAttr = escAttr(f.id);
+    const nameAttr = escAttr(f.name);
+    html += `<div class="frame-card" id="card-${nodeIdAttr.replace(/:/g,'-')}">`;
+    html += `<div class="frame-thumb" onclick="toggleCard('${nodeIdAttr}')">`;
+    if (url) {
+      html += `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=thumb-fail>Failed to load</div>'" />`;
+    } else {
+      html += `<div class="thumb-fail">No preview</div>`;
     }
-    if (texts.length > 100) html += `<p style="color:#888;font-size:12px;margin-top:8px;">... 외 ${texts.length - 100}개</p>`;
     html += `</div>`;
+    html += `<div class="frame-footer">`;
+    html += `<input type="checkbox" class="top-frame-cb" data-node-id="${nodeIdAttr}" data-frame-name="${nameAttr}" checked onchange="onCheckChange()" />`;
+    html += `<span class="frame-name" onclick="toggleCard('${nodeIdAttr}')" title="${nameAttr}">${esc(f.name)}</span>`;
+    html += `</div></div>`;
   }
-  */
-
+  html += '</div>';
   main.innerHTML = html;
-  loadTopFrameImages(pageNode);
+
+  document.getElementById('saveBar').style.display = 'flex';
+  updateSaveBarInfo();
 }
 
-function getTopLevelFrames(pageNode) {
-  if (!pageNode || !pageNode.children) return [];
-  return pageNode.children.filter((c) => c.type === 'FRAME');
+function toggleCard(nodeId) {
+  const safe = nodeId.replace(/:/g, '-');
+  const card = document.getElementById(`card-${safe}`);
+  if (!card) return;
+  const cb = card.querySelector('.top-frame-cb');
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  onCheckChange();
+}
+
+function onCheckChange() {
+  document.querySelectorAll('.frame-card').forEach(card => {
+    const cb = card.querySelector('.top-frame-cb');
+    card.classList.toggle('unchecked', cb && !cb.checked);
+  });
+  updateSaveBarInfo();
+}
+
+function updateSaveBarInfo() {
+  const all = document.querySelectorAll('.top-frame-cb');
+  const checked = document.querySelectorAll('.top-frame-cb:checked');
+  document.getElementById('saveBarInfo').textContent = `${checked.length} / ${all.length} frame${all.length !== 1 ? 's' : ''} selected`;
+}
+
+function toggleSelectAll() {
+  const all = document.querySelectorAll('.top-frame-cb');
+  const allChecked = [...all].every(cb => cb.checked);
+  all.forEach(cb => { cb.checked = !allChecked; });
+  onCheckChange();
 }
 
 async function fetchImageUrlMap(nodeIds) {
@@ -295,271 +254,11 @@ async function fetchImageUrlMap(nodeIds) {
   const merged = {};
   for (let i = 0; i < nodeIds.length; i += BATCH) {
     const batch = nodeIds.slice(i, i + BATCH);
-    const qs =
-      'ids=' +
-      batch.map((id) => encodeURIComponent(id)).join(',') +
-      '&format=png&scale=0.5';
+    const qs = 'ids=' + batch.map(id => encodeURIComponent(id)).join(',') + '&format=png&scale=0.5';
     const data = await apiFetch(`/images/${currentFileKey}?${qs}`);
     if (data.images) Object.assign(merged, data.images);
-    if (data.err) console.warn('images API:', data.err);
   }
   return merged;
-}
-
-async function loadTopFrameImages(pageNode) {
-  const loadingEl = document.getElementById('topFramesLoading');
-  const listEl = document.getElementById('topFramesList');
-  if (!loadingEl || !listEl) return;
-
-  const frames = getTopLevelFrames(pageNode);
-  if (frames.length === 0) {
-    loadingEl.style.display = 'none';
-    listEl.style.display = 'grid';
-    listEl.innerHTML =
-      '<p style="grid-column: 1 / -1; color:#888;font-size:13px;">이 페이지 바로 아래에 FRAME 타입 노드가 없습니다. (SECTION/그룹만 있는 경우 여기에는 표시되지 않습니다.)</p>';
-    return;
-  }
-
-  try {
-    const idToUrl = await fetchImageUrlMap(frames.map((f) => f.id));
-    loadingEl.style.display = 'none';
-    listEl.style.display = 'grid';
-    let listHtml = '';
-    for (const f of frames) {
-      const url = idToUrl[f.id];
-      const nodeIdAttr = escAttr(f.id);
-      listHtml += `<div class="frame-list-item">`;
-      listHtml += `<div class="frame-list-toolbar">`;
-      listHtml += `<label class="frame-list-check-label">`;
-      listHtml += `<input type="checkbox" class="top-frame-cb" data-node-id="${nodeIdAttr}" data-frame-name="${escAttr(f.name)}" checked />`;
-      listHtml += `<span class="frame-list-name">${esc(f.name)}</span>`;
-      listHtml += `</label></div>`;
-      listHtml += `<div class="frame-list-thumb">`;
-      if (url) {
-        listHtml += `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=thumb-fail>이미지 로드 실패</div>'" />`;
-      } else {
-        listHtml += `<div class="thumb-fail">렌더 URL 없음 (크기 제한 등)</div>`;
-      }
-      listHtml += `</div>`;
-      listHtml += `<div class="frame-list-meta">`;
-      listHtml += `<div class="frame-list-id">${esc(f.id)}</div>`;
-      listHtml += `</div></div>`;
-    }
-    listHtml += `<div class="frame-export-bar"><button type="button" class="frame-md-btn" onclick="exportSelectedFramesMarkdown()">선택 확인 · Markdown 저장</button></div>`;
-    listEl.innerHTML = listHtml;
-  } catch (e) {
-    loadingEl.style.display = 'none';
-    listEl.style.display = 'grid';
-    listEl.innerHTML = `<div class="error" style="margin:0;grid-column:1/-1">❌ ${esc(e.message)}</div>`;
-  }
-}
-
-function renderTreeNode(node, depth) {
-  const hasChildren = node.children && node.children.length > 0;
-  const nodeId = `tnode-${node.id.replace(/:/g,'-')}`;
-  let html = `<div class="tree-node" id="${nodeId}" onclick="selectNode(event, '${node.id}')" style="padding-left:${depth * 16 + 8}px">`;
-  html += `<span class="tree-toggle" onclick="toggleChildren(event, '${nodeId}-ch')">${hasChildren ? '▶' : ''}</span>`;
-  html += `<span class="tree-type ${node.type}">${shortType(node.type)}</span>`;
-  html += `<span class="tree-name" title="${esc(node.name)}">${esc(node.name)}</span>`;
-  html += `</div>`;
-
-  if (hasChildren) {
-    html += `<div class="tree-children" id="${nodeId}-ch" style="display:none">`;
-    for (const ch of node.children) {
-      html += renderTreeNode(ch, depth + 1);
-    }
-    html += `</div>`;
-  }
-  return html;
-}
-
-function toggleChildren(e, id) {
-  e.stopPropagation();
-  const el = document.getElementById(id);
-  if (!el) return;
-  const isHidden = el.style.display === 'none';
-  el.style.display = isHidden ? '' : 'none';
-  const toggle = e.target;
-  toggle.textContent = isHidden ? '▼' : '▶';
-}
-
-function selectNode(e, nodeId) {
-  e.stopPropagation();
-  document.querySelectorAll('.tree-node').forEach(el => el.classList.remove('selected'));
-  const el = document.getElementById(`tnode-${nodeId.replace(/:/g,'-')}`);
-  if (el) el.classList.add('selected');
-
-  // 해당 노드 찾기
-  const node = findNode(nodeId);
-  if (node) showNodeDetail(node);
-}
-
-function findNode(id) {
-  for (const pageId in pagesData) {
-    const found = findInTree(pagesData[pageId], id);
-    if (found) return found;
-  }
-  return null;
-}
-
-function findInTree(node, id) {
-  if (!node) return null;
-  if (node.id === id) return node;
-  if (node.children) {
-    for (const ch of node.children) {
-      const f = findInTree(ch, id);
-      if (f) return f;
-    }
-  }
-  return null;
-}
-
-function showNodeDetail(node) {
-  const sidebar = document.getElementById('main');
-  let html = `<div class="detail-panel">
-    <h2><span class="tree-type ${node.type}">${shortType(node.type)}</span> ${esc(node.name)}</h2>
-    <div class="detail-row"><span class="detail-label">ID</span><span class="detail-value">${node.id}</span></div>
-    <div class="detail-row"><span class="detail-label">타입</span><span class="detail-value">${node.type}</span></div>`;
-
-  if (node.absoluteBoundingBox) {
-    const b = node.absoluteBoundingBox;
-    html += `<div class="detail-row"><span class="detail-label">위치</span><span class="detail-value">x:${b.x}, y:${b.y}</span></div>`;
-    html += `<div class="detail-row"><span class="detail-label">크기</span><span class="detail-value">${b.width} × ${b.height}</span></div>`;
-  }
-
-  if (node.characters) {
-    html += `<h3>텍스트 내용</h3><div class="text-content">${esc(node.characters)}</div>`;
-  }
-
-  if (node.fills && node.fills.length) {
-    html += `<h3>채우기</h3>`;
-    for (const fill of node.fills) {
-      if (fill.color) {
-        const c = fill.color;
-        const hex = rgbToHex(c.r, c.g, c.b);
-        html += `<div class="detail-row"><span class="detail-label">${fill.type}</span>
-          <span class="detail-value"><span style="display:inline-block;width:14px;height:14px;background:${hex};border-radius:3px;vertical-align:middle;margin-right:6px;border:1px solid #555"></span>${hex} (${Math.round((c.a ?? 1) * 100)}%)</span></div>`;
-      }
-    }
-  }
-
-  if (node.style) {
-    html += `<h3>텍스트 스타일</h3>`;
-    const s = node.style;
-    if (s.fontFamily) html += `<div class="detail-row"><span class="detail-label">폰트</span><span class="detail-value">${s.fontFamily} ${s.fontWeight ?? ''}</span></div>`;
-    if (s.fontSize) html += `<div class="detail-row"><span class="detail-label">크기</span><span class="detail-value">${s.fontSize}px</span></div>`;
-    if (s.lineHeightPx) html += `<div class="detail-row"><span class="detail-label">행간</span><span class="detail-value">${s.lineHeightPx}px</span></div>`;
-    if (s.letterSpacing) html += `<div class="detail-row"><span class="detail-label">자간</span><span class="detail-value">${s.letterSpacing}px</span></div>`;
-    if (s.textAlignHorizontal) html += `<div class="detail-row"><span class="detail-label">정렬</span><span class="detail-value">${s.textAlignHorizontal}</span></div>`;
-  }
-
-  if (node.layoutMode) {
-    html += `<h3>Auto Layout</h3>`;
-    html += `<div class="detail-row"><span class="detail-label">방향</span><span class="detail-value">${node.layoutMode}</span></div>`;
-    if (node.itemSpacing != null) html += `<div class="detail-row"><span class="detail-label">간격</span><span class="detail-value">${node.itemSpacing}px</span></div>`;
-    if (node.paddingTop != null) html += `<div class="detail-row"><span class="detail-label">패딩</span><span class="detail-value">${node.paddingTop} ${node.paddingRight} ${node.paddingBottom} ${node.paddingLeft}</span></div>`;
-  }
-
-  if (node.children) {
-    html += `<h3>자식 노드 (${node.children.length}개)</h3>`;
-    for (const ch of node.children) {
-      html += `<div class="detail-row" style="cursor:pointer" onclick="selectNode(event,'${ch.id}')">
-        <span class="tree-type ${ch.type}">${shortType(ch.type)}</span>
-        <span class="detail-value">${esc(ch.name)}</span>
-      </div>`;
-    }
-  }
-
-  html += `</div>`;
-  sidebar.innerHTML = html;
-}
-
-function renderFileOverview(pages) {
-  const main = document.getElementById('main');
-  let html = `<div class="detail-panel">
-    <h2>📁 ${esc(fileData.name)}</h2>
-    <div class="detail-row"><span class="detail-label">파일 키</span><span class="detail-value">${currentFileKey}</span></div>
-    <div class="detail-row"><span class="detail-label">최종 수정</span><span class="detail-value">${fileData.lastModified}</span></div>
-    <div class="detail-row"><span class="detail-label">버전</span><span class="detail-value">${fileData.version}</span></div>
-  </div>`;
-
-  html += `<div class="stats-grid">
-    <div class="stat-card"><div class="stat-number">${pages.length}</div><div class="stat-label">페이지</div></div>
-  </div>`;
-
-  html += `<div class="detail-panel"><h2>📑 페이지 목록</h2>`;
-  for (const p of pages) {
-    html += `<div class="detail-row" style="cursor:pointer" onclick="selectPage('${p.id}')">
-      <span class="detail-label">${p.id}</span>
-      <span class="detail-value" style="color:#0d99ff">${esc(p.name)}</span>
-    </div>`;
-  }
-  html += `</div>`;
-  main.innerHTML = html;
-}
-
-function getNodeStats(node) {
-  const stats = {};
-  function walk(n) {
-    stats[n.type] = (stats[n.type] || 0) + 1;
-    if (n.children) n.children.forEach(walk);
-  }
-  if (node.children) node.children.forEach(walk);
-  return stats;
-}
-
-function collectTexts(node) {
-  const texts = [];
-  function walk(n) {
-    if (n.type === 'TEXT' && n.characters) texts.push(n);
-    if (n.children) n.children.forEach(walk);
-  }
-  walk(node);
-  return texts;
-}
-
-function filterNodes(query) {
-  if (!query) {
-    document.querySelectorAll('.tree-node, .tree-children').forEach(el => el.style.display = '');
-    return;
-  }
-  query = query.toLowerCase();
-  document.querySelectorAll('.tree-node').forEach(el => {
-    const name = el.querySelector('.tree-name')?.textContent?.toLowerCase() || '';
-    el.style.display = name.includes(query) ? '' : 'none';
-  });
-}
-
-function shortType(type) {
-  const map = { FRAME: 'F', GROUP: 'G', TEXT: 'T', COMPONENT: 'C', COMPONENT_SET: 'CS', INSTANCE: 'I', RECTANGLE: 'R', ELLIPSE: 'E', VECTOR: 'V', LINE: 'L', BOOLEAN_OPERATION: 'B', SECTION: 'S', CANVAS: 'PG', DOCUMENT: 'DOC' };
-  return map[type] || type?.charAt(0) || '?';
-}
-
-function rgbToHex(r, g, b) {
-  return '#' + [r, g, b].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
-}
-
-function esc(s) {
-  if (!s) return '';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function escAttr(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/'/g, '&#39;');
-}
-
-function exportJSON() {
-  const data = { file: fileData, pages: pagesData };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `figma-${currentFileKey}.json`;
-  a.click();
 }
 
 function figmaLinkToSelection(nodeId) {
@@ -572,27 +271,26 @@ function escapeMdLine(s) {
 }
 
 async function exportSelectedFramesMarkdown() {
-  const boxes = document.querySelectorAll('#topFramesList .top-frame-cb:checked');
+  const boxes = document.querySelectorAll('#main .top-frame-cb:checked');
   if (!boxes.length) {
-    alert('선택된 프레임이 없습니다. 체크박스를 선택한 뒤 다시 시도하세요.');
-    return;
-  }
-  if (!currentFileKey) {
-    alert('파일이 로드되지 않았습니다.');
+    alert('No frames selected. Please check at least one frame.');
     return;
   }
   const title = fileData && fileData.name ? fileData.name : currentFileKey;
   let md = `# Figma — Link to selection\n\n`;
-  md += `파일: **${escapeMdLine(title)}**\n\n`;
+  md += `File: **${escapeMdLine(title)}**\n\n`;
   for (const cb of boxes) {
     const id = cb.getAttribute('data-node-id');
-    const rawName = cb.getAttribute('data-frame-name') || id;
-    const name = escapeMdLine(rawName);
-    const link = figmaLinkToSelection(id);
-    md += `- ${name} — ${link}\n`;
+    const name = escapeMdLine(cb.getAttribute('data-frame-name') || id);
+    md += `- ${name} — ${figmaLinkToSelection(id)}\n`;
   }
   md += `\n`;
+
   const filename = `figma-links-${currentFileKey}.md`.replace(/[^\w.\-]/g, '_');
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
   try {
     const r = await fetch('/api/save-markdown', {
       method: 'POST',
@@ -604,14 +302,11 @@ async function exportSelectedFramesMarkdown() {
       try {
         await fetch('/api/shutdown', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', keepalive: true });
       } catch (_) {}
-      alert(
-        `저장했습니다: ${j.path}\\n(tools 기준)\\n\\n로컬 서버를 종료했습니다. Simple Browser 탭은 직접 닫아 주세요.`
-      );
+      alert(`Saved: ${j.path}`);
       window.close();
       return;
     }
-    const err = (j && j.error) ? j.error : (r.statusText || '저장 실패');
-    throw new Error(err);
+    throw new Error((j && j.error) ? j.error : (r.statusText || 'Save failed'));
   } catch (e) {
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
     const a = document.createElement('a');
@@ -619,26 +314,31 @@ async function exportSelectedFramesMarkdown() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
-    alert(
-      '서버 저장에 실패해 브라우저 다운로드로 대체했습니다.\\n' +
-      '(tools에서 serve_figma_explorer.py 로 띄운 경우 tools/exports/ 에 저장됩니다.)\\n\\n' +
-      (e && e.message ? e.message : '')
-    );
+    alert('Server save failed — downloaded via browser instead.\n' + (e && e.message ? e.message : ''));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save as Markdown';
   }
 }
 
-// figma-config.json + URL 쿼리로 값 채운 뒤, 토큰·URL이 있으면 즉시 불러오기
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
+}
+
+// init: populate from figma-config.json + query params, then auto-load
 (async function init() {
   try {
     const r = await fetch('figma-config.json', { cache: 'no-store' });
     if (r.ok) {
       const cfg = await r.json();
-      if (cfg.token && String(cfg.token).trim()) {
-        document.getElementById('tokenInput').value = String(cfg.token).trim();
-      }
-      if (cfg.fileUrl && String(cfg.fileUrl).trim()) {
-        document.getElementById('urlInput').value = String(cfg.fileUrl).trim();
-      }
+      if (cfg.token) document.getElementById('tokenInput').value = String(cfg.token).trim();
+      if (cfg.fileUrl) document.getElementById('urlInput').value = String(cfg.fileUrl).trim();
     }
   } catch (_) {}
   const params = new URLSearchParams(location.search);
@@ -648,10 +348,9 @@ async function exportSelectedFramesMarkdown() {
   if (getToken() && document.getElementById('urlInput').value.trim()) {
     await loadFile();
   } else {
-    const msg =
-      '<div class="error" style="margin:20px">figma-config.json에 <code>token</code>·<code>fileUrl</code>을 넣거나, 주소에 <code>?url=</code>·<code>?token=</code> 쿼리를 넣은 뒤 새로고침하세요.</div>';
-    document.getElementById('sidebar').innerHTML = msg;
-    document.getElementById('main').innerHTML = msg;
+    document.getElementById('pageTabs').innerHTML = '';
+    document.getElementById('main').innerHTML =
+      '<div class="error" style="margin:20px">Add <code>token</code> and <code>fileUrl</code> to figma-config.json, or pass <code>?url=</code> and <code>?token=</code> as query parameters and reload.</div>';
   }
 })();
 </script>
