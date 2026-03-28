@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figma Explorer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1e1e1e; color: #e0e0e0; display: flex; flex-direction: column; height: 100vh; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+  /* Header */
+  .header { background: #252525; border-bottom: 1px solid #3a3a3a; padding: 0 20px; flex-shrink: 0; }
+  .header-top { display: flex; align-items: center; gap: 12px; padding: 12px 0 10px; }
+  .header-title { font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; }
+  .header-sub { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .page-tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 0; scrollbar-width: none; }
+  .page-tabs::-webkit-scrollbar { display: none; }
+  .page-tab { padding: 8px 16px; font-size: 13px; cursor: pointer; border-radius: 6px 6px 0 0; color: #aaa; white-space: nowrap; border: 1px solid transparent; border-bottom: none; transition: background 0.15s; }
+  .page-tab:hover { background: #2e2e2e; color: #ddd; }
+  .page-tab.active { background: #1e1e1e; color: #fff; border-color: #3a3a3a; font-weight: 600; }
+  .page-tabs-placeholder { padding: 8px 0; font-size: 12px; color: #666; }
+
+  /* Main */
+  .main { flex: 1; overflow-y: auto; padding: 24px; }
+
+  .loading { text-align: center; padding: 60px; color: #888; }
+  .loading .spinner { display: inline-block; width: 28px; height: 28px; border: 2px solid #555; border-top-color: #0d99ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error { background: #ef444433; border: 1px solid #ef4444; border-radius: 8px; padding: 12px 16px; color: #fca5a5; font-size: 13px; }
+
+  .empty-state { text-align: center; padding: 80px 20px; color: #555; }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Frame grid */
+  .frame-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .frame-card { background: #252525; border: 1px solid #3a3a3a; border-radius: 10px; overflow: hidden; transition: border-color 0.15s; }
+  .frame-card:hover { border-color: #555; }
+  .frame-card.unchecked { opacity: 0.45; }
+  .frame-thumb { width: 100%; aspect-ratio: 4/3; background: #111; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+  .frame-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .thumb-fail { font-size: 11px; color: #666; text-align: center; padding: 12px; }
+  .frame-footer { padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+  .frame-footer input[type="checkbox"] { width: 15px; height: 15px; accent-color: #0d99ff; cursor: pointer; flex-shrink: 0; }
+  .frame-name { font-size: 13px; font-weight: 500; color: #e0e0e0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; user-select: none; }
+
+  /* Save bar */
+  .save-bar { position: sticky; bottom: 0; background: #1e1e1e; border-top: 1px solid #3a3a3a; padding: 14px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .save-bar-info { font-size: 12px; color: #888; flex: 1; }
+  .select-all-btn { background: #333; color: #ccc; border: 1px solid #555; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .select-all-btn:hover { background: #3a3a3a; }
+  .save-btn { background: #15803d; color: #fff; border: none; padding: 9px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .save-btn:hover { background: #166534; }
+  .save-btn:disabled { background: #555; cursor: default; }
+</style>
+</head>
+<body>
+
+<div id="figma-config-fields" class="sr-only" aria-hidden="true">
+  <input type="hidden" id="tokenInput" autocomplete="off" />
+  <input type="hidden" id="urlInput" autocomplete="off" />
+  <button type="button" id="loadBtn" onclick="loadFile()" tabindex="-1"></button>
+</div>
+
+<div class="header">
+  <div class="header-top">
+    <span class="header-title" id="headerTitle">Figma Explorer</span>
+    <span class="header-sub" id="headerSub"></span>
+  </div>
+  <div class="page-tabs" id="pageTabs">
+    <div class="page-tabs-placeholder">파일을 불러오는 중...</div>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div class="empty-state">
+    <div class="icon">📐</div>
+    <p>Figma 파일을 불러오는 중입니다</p>
+  </div>
+</div>
+
+<div class="save-bar" id="saveBar" style="display:none">
+  <span class="save-bar-info" id="saveBarInfo"></span>
+  <button class="select-all-btn" onclick="toggleSelectAll()">전체 선택/해제</button>
+  <button class="save-btn" id="saveBtn" onclick="exportSelectedFramesMarkdown()">선택 확인 · Markdown 저장</button>
+</div>
+
+<script>
+const API_BASE = 'https://api.figma.com/v1';
+let fileData = null;
+let pagesData = {};
+let currentFileKey = '';
+let currentPageId = '';
+
+function getToken() { return document.getElementById('tokenInput').value.trim(); }
+
+function extractFileKey(url) {
+  const m = url.match(/figma\.com\/(?:file|design)\/([a-zA-Z0-9]+)/);
+  return m ? m[1] : url.trim();
+}
+
+async function apiFetch(path) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'X-FIGMA-TOKEN': getToken() }
+  });
+  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
+  return res.json();
+}
+
+async function loadFile() {
+  const token = getToken();
+  const url = document.getElementById('urlInput').value.trim();
+  if (!token || !url) return;
+
+  currentFileKey = extractFileKey(url);
+
+  document.getElementById('pageTabs').innerHTML = '<div class="page-tabs-placeholder">페이지 목록 로딩중...</div>';
+  document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>불러오는 중...</div>';
+
+  try {
+    fileData = await apiFetch(`/files/${currentFileKey}?depth=1`);
+    const pages = fileData.document.children;
+
+    document.getElementById('headerTitle').textContent = fileData.name;
+    document.getElementById('headerSub').textContent = `${pages.length}개 페이지`;
+
+    renderPageTabs(pages);
+
+    // 각 페이지 노드 순차 로드
+    for (const page of pages) {
+      try {
+        const nodeData = await apiFetch(`/files/${currentFileKey}/nodes?ids=${page.id}&depth=3`);
+        pagesData[page.id] = nodeData.nodes[page.id]?.document;
+        // 현재 보고 있는 페이지면 갱신
+        if (page.id === currentPageId) renderFrameGrid(pagesData[page.id]);
+      } catch (e) {
+        console.warn(`Page ${page.name} 로드 실패:`, e);
+      }
+    }
+  } catch (e) {
+    document.getElementById('pageTabs').innerHTML = '';
+    document.getElementById('main').innerHTML = `<div class="error">❌ ${esc(e.message)}</div>`;
+  }
+}
+
+function renderPageTabs(pages) {
+  let html = '';
+  for (const page of pages) {
+    html += `<div class="page-tab" id="tab-${page.id.replace(':','-')}" onclick="selectPage('${page.id}')">${esc(page.name)}</div>`;
+  }
+  document.getElementById('pageTabs').innerHTML = html;
+
+  // 첫 페이지 자동 선택
+  if (pages.length > 0) selectPage(pages[0].id);
+}
+
+function selectPage(pageId) {
+  currentPageId = pageId;
+  document.querySelectorAll('.page-tab').forEach(el => el.classList.remove('active'));
+  const tab = document.getElementById(`tab-${pageId.replace(':','-')}`);
+  if (tab) tab.classList.add('active');
+
+  const data = pagesData[pageId];
+  if (!data) {
+    document.getElementById('main').innerHTML = '<div class="loading"><div class="spinner"></div><br>이 페이지 로딩중...</div>';
+    document.getElementById('saveBar').style.display = 'none';
+    return;
+  }
+  renderFrameGrid(data);
+}
+
+async function renderFrameGrid(pageNode) {
+  const main = document.getElementById('main');
+  const frames = (pageNode.children || []).filter(c => c.type === 'FRAME');
+
+  if (frames.length === 0) {
+    main.innerHTML = '<div class="empty-state"><div class="icon">🖼</div><p>이 페이지에 최상위 FRAME이 없습니다.</p></div>';
+    document.getElementById('saveBar').style.display = 'none';
+    return;
+  }
+
+  // 썸네일 로딩 표시 먼저
+  main.innerHTML = '<div class="loading"><div class="spinner"></div><br>이미지 로딩중...</div>';
+  document.getElementById('saveBar').style.display = 'none';
+
+  let idToUrl = {};
+  try {
+    idToUrl = await fetchImageUrlMap(frames.map(f => f.id));
+  } catch (e) {
+    console.warn('이미지 URL 로드 실패:', e);
+  }
+
+  let html = '<div class="frame-grid">';
+  for (const f of frames) {
+    const url = idToUrl[f.id];
+    const nodeIdAttr = escAttr(f.id);
+    const nameAttr = escAttr(f.name);
+    html += `<div class="frame-card" id="card-${nodeIdAttr.replace(/:/g,'-')}">`;
+    html += `<div class="frame-thumb" onclick="toggleCard('${nodeIdAttr}')">`;
+    if (url) {
+      html += `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=thumb-fail>이미지 로드 실패</div>'" />`;
+    } else {
+      html += `<div class="thumb-fail">미리보기 없음</div>`;
+    }
+    html += `</div>`;
+    html += `<div class="frame-footer">`;
+    html += `<input type="checkbox" class="top-frame-cb" data-node-id="${nodeIdAttr}" data-frame-name="${nameAttr}" checked onchange="onCheckChange()" />`;
+    html += `<span class="frame-name" onclick="toggleCard('${nodeIdAttr}')" title="${nameAttr}">${esc(f.name)}</span>`;
+    html += `</div></div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+
+  document.getElementById('saveBar').style.display = 'flex';
+  updateSaveBarInfo();
+}
+
+function toggleCard(nodeId) {
+  const safe = nodeId.replace(/:/g, '-');
+  const card = document.getElementById(`card-${safe}`);
+  if (!card) return;
+  const cb = card.querySelector('.top-frame-cb');
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  onCheckChange();
+}
+
+function onCheckChange() {
+  document.querySelectorAll('.frame-card').forEach(card => {
+    const cb = card.querySelector('.top-frame-cb');
+    card.classList.toggle('unchecked', cb && !cb.checked);
+  });
+  updateSaveBarInfo();
+}
+
+function updateSaveBarInfo() {
+  const all = document.querySelectorAll('.top-frame-cb');
+  const checked = document.querySelectorAll('.top-frame-cb:checked');
+  document.getElementById('saveBarInfo').textContent = `${checked.length} / ${all.length}개 프레임 선택됨`;
+}
+
+function toggleSelectAll() {
+  const all = document.querySelectorAll('.top-frame-cb');
+  const allChecked = [...all].every(cb => cb.checked);
+  all.forEach(cb => { cb.checked = !allChecked; });
+  onCheckChange();
+}
+
+async function fetchImageUrlMap(nodeIds) {
+  if (!nodeIds.length) return {};
+  const BATCH = 40;
+  const merged = {};
+  for (let i = 0; i < nodeIds.length; i += BATCH) {
+    const batch = nodeIds.slice(i, i + BATCH);
+    const qs = 'ids=' + batch.map(id => encodeURIComponent(id)).join(',') + '&format=png&scale=0.5';
+    const data = await apiFetch(`/images/${currentFileKey}?${qs}`);
+    if (data.images) Object.assign(merged, data.images);
+  }
+  return merged;
+}
+
+function figmaLinkToSelection(nodeId) {
+  const q = String(nodeId).replace(/:/g, '-');
+  return `https://www.figma.com/design/${currentFileKey}?node-id=${encodeURIComponent(q)}`;
+}
+
+function escapeMdLine(s) {
+  return String(s).replace(/\r?\n/g, ' ').trim();
+}
+
+async function exportSelectedFramesMarkdown() {
+  const boxes = document.querySelectorAll('#main .top-frame-cb:checked');
+  if (!boxes.length) {
+    alert('선택된 프레임이 없습니다.');
+    return;
+  }
+  const title = fileData && fileData.name ? fileData.name : currentFileKey;
+  let md = `# Figma — Link to selection\n\n`;
+  md += `파일: **${escapeMdLine(title)}**\n\n`;
+  for (const cb of boxes) {
+    const id = cb.getAttribute('data-node-id');
+    const name = escapeMdLine(cb.getAttribute('data-frame-name') || id);
+    md += `- ${name} — ${figmaLinkToSelection(id)}\n`;
+  }
+  md += `\n`;
+
+  const filename = `figma-links-${currentFileKey}.md`.replace(/[^\w.\-]/g, '_');
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '저장중...';
+
+  try {
+    const r = await fetch('/api/save-markdown', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: md, filename })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok && j.path) {
+      try {
+        await fetch('/api/shutdown', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', keepalive: true });
+      } catch (_) {}
+      alert(`저장했습니다: ${j.path}`);
+      window.close();
+      return;
+    }
+    throw new Error((j && j.error) ? j.error : (r.statusText || '저장 실패'));
+  } catch (e) {
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    alert('서버 저장 실패 — 브라우저 다운로드로 대체했습니다.\n' + (e && e.message ? e.message : ''));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '선택 확인 · Markdown 저장';
+  }
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
+}
+
+// 초기화: figma-config.json + URL 쿼리로 값 채운 뒤 즉시 불러오기
+(async function init() {
+  try {
+    const r = await fetch('figma-config.json', { cache: 'no-store' });
+    if (r.ok) {
+      const cfg = await r.json();
+      if (cfg.token) document.getElementById('tokenInput').value = String(cfg.token).trim();
+      if (cfg.fileUrl) document.getElementById('urlInput').value = String(cfg.fileUrl).trim();
+    }
+  } catch (_) {}
+  const params = new URLSearchParams(location.search);
+  if (params.get('url')) document.getElementById('urlInput').value = params.get('url');
+  if (params.get('token')) document.getElementById('tokenInput').value = params.get('token');
+
+  if (getToken() && document.getElementById('urlInput').value.trim()) {
+    await loadFile();
+  } else {
+    document.getElementById('pageTabs').innerHTML = '';
+    document.getElementById('main').innerHTML =
+      '<div class="error" style="margin:20px">figma-config.json에 <code>token</code>·<code>fileUrl</code>을 넣거나, 주소에 <code>?url=</code>·<code>?token=</code> 쿼리를 넣은 뒤 새로고침하세요.</div>';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 ---
-name: figma-explorer
-description: Runs the local Figma Explorer HTML app, opens it in the browser, and exports selected frame links to Markdown under figma_exports/; the dev server stops automatically after a successful save. Use when the user invokes /figma-explorer, mentions Figma Explorer, or wants Figma frame deep links in Markdown.
+name: figma-links
+description: Runs the local Figma Explorer HTML app, opens it in the browser, and exports selected frame links to Markdown under figma_exports/; the dev server stops automatically after a successful save. Use when the user invokes /figma-links, mentions Figma Explorer, or wants Figma frame deep links in Markdown.
 ---
 
-# Figma Explorer (로컬 UI → Markdown)
+# Figma Links (로컬 UI → Markdown)
 
 프로젝트의 **`.cursor/tools/figma-explorer.html`** 을 **`.cursor/tools/serve_figma_explorer.py` 로컬 서버**로 띄우고, IDE **Simple Browser** 또는 **Browser MCP**로 연 뒤 최상위 프레임을 고르고 **선택 확인 · Markdown 저장**을 누르면 프로젝트 루트의 **`figma_exports/`** 아래에 Markdown이 저장된다(브라우저만으로는 디스크에 직접 쓸 수 없어 저장 API가 필요하다).
 
@@ -12,19 +12,19 @@ description: Runs the local Figma Explorer HTML app, opens it in the browser, an
 ## 사용법
 
 ```
-/figma-explorer {Figma 파일 URL}
+/figma-links {Figma 파일 URL}
 ```
 
 예:
 ```
-/figma-explorer https://www.figma.com/design/ABC123/MyFile?node-id=0-1
+/figma-links https://www.figma.com/design/ABC123/MyFile?node-id=0-1
 ```
 
 `$ARGUMENTS`가 곧 Figma 파일 URL이다. 비어 있으면 사용자에게 URL을 요청한다.
 
 ## 트리거
 
-- 사용자가 **`/figma-explorer {URL}`** 를 치거나, Figma 파일 URL과 함께 이 워크플로를 요청할 때 이 스킬을 따른다.
+- 사용자가 **`/figma-links {URL}`** 를 치거나, Figma 파일 URL과 함께 이 워크플로를 요청할 때 이 스킬을 따른다.
 
 ## 사전 조건
 
