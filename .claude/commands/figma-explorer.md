@@ -96,7 +96,7 @@ http://localhost:8080/figma-explorer.html?url={url-encoded-figma-url}&token={FIG
 
 ## 에이전트 체크리스트
 
-- [ ] `python3 tools/serve_figma_explorer.py`로 서버를 띄웠는가(또는 이미 떠 있는지 확인).
+- [ ] `python3 .claude/tools/serve_figma_explorer.py`로 서버를 띄웠는가(또는 이미 떠 있는지 확인).
 - [ ] 브라우저가 `localhost`의 `figma-explorer.html`을 여는가(`file://` 아님).
 - [ ] `$FIGMA_TOKEN`이 설정되어 있는가. 사용자에게 토큰을 채팅에 출력하도록 요구하지 않았는가.
 - [ ] Markdown이 **`figma_exports/`** 에 저장됐는지 확인했는가.
